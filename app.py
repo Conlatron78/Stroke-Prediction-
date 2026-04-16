@@ -1,15 +1,11 @@
 import streamlit as st
 import pandas as pd
-
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
-# -------------------------------
-# LOAD DATA
-# -------------------------------
 df = pd.read_csv("healthcare-dataset-stroke-data.csv")
 df = df.drop(columns=["id"])
 
@@ -19,9 +15,6 @@ y = df["stroke"]
 numeric_features = X.select_dtypes(include=["int64", "float64"]).columns
 categorical_features = X.select_dtypes(include=["object"]).columns
 
-# -------------------------------
-# PREPROCESSING (same as yours)
-# -------------------------------
 numeric_pipeline = Pipeline([
     ("imputer", SimpleImputer(strategy="mean")),
     ("scaler", StandardScaler())
@@ -37,22 +30,14 @@ preprocessor = ColumnTransformer([
     ("cat", categorical_pipeline, categorical_features)
 ])
 
-# -------------------------------
-# FINAL MODEL (Random Forest)
-# -------------------------------
 model = Pipeline([
     ("preprocessing", preprocessor),
-    ("classifier", RandomForestClassifier(n_estimators=100, random_state=42))
+    ("classifier", LogisticRegression(max_iter=1000, class_weight="balanced"))
 ])
 
-# Train on full dataset
 model.fit(X, y)
 
-# -------------------------------
-# STREAMLIT UI
-# -------------------------------
 st.title("Stroke Prediction System")
-
 st.write("Enter patient details:")
 
 gender = st.selectbox("Gender", ["Male", "Female", "Other"])
@@ -66,7 +51,6 @@ avg_glucose_level = st.slider("Average Glucose Level", 50.0, 300.0, 100.0)
 bmi = st.slider("BMI", 10.0, 50.0, 25.0)
 smoking_status = st.selectbox("Smoking Status", ["formerly smoked", "never smoked", "smokes", "Unknown"])
 
-# Create input
 input_data = pd.DataFrame({
     "gender": [gender],
     "age": [age],
@@ -80,9 +64,6 @@ input_data = pd.DataFrame({
     "smoking_status": [smoking_status]
 })
 
-# -------------------------------
-# PREDICTION
-# -------------------------------
 if st.button("Predict"):
     prediction = model.predict(input_data)[0]
     probability = model.predict_proba(input_data)[0][1]
